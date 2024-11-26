@@ -17,6 +17,14 @@
             <button type="submit">Upload</button>
         </form>
 
+        <div class="container p-2">
+            <h1>Upload spatie simple excel</h1>
+            <form action="{{ route('upload_simple_excel') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <input type="file" name="spatie-excel" required>
+                <button type="submit">Upload</button>
+            </form>
+        </div>
         <!-- Filter -->
         <form method="GET" action="{{ route('dashboard') }}" class="container mt-4">
             <div class="row mb-3">
