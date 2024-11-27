@@ -128,7 +128,6 @@ class MasterDataController extends Controller
         $this->saveDataToDatabase($data);
 
         return response()->json(['message' => 'Success mang']);
-
     }
 
     public function upload_simple_excel(Request $request)
@@ -151,51 +150,22 @@ class MasterDataController extends Controller
             ->useDelimiter(';')
             ->noHeaderRow()
             ->getRows()
-            ->skip(1)
-            ->each(function (array $rowProperties) {
-
-                // Get data and handle empty or null or n/a data
-                $nama = $this->handleNA($rowProperties[0]);
-                $dob = $this->handleNA($rowProperties[1]);
-                $alamat_rumah = $this->handleNA($rowProperties[2]);
-                $kec_rmh = $this->handleNA($rowProperties[3]);
-                $kota_rmh = $this->handleNA($rowProperties[4]);
-                $perusahaan = $this->handleNA($rowProperties[5]);
-                $jabatan = $this->handleNA($rowProperties[6]);
-                $alamat_perush = $this->handleNA($rowProperties[7]);
-                $kota_perush = $this->handleNA($rowProperties[8]);
-                $kode_pos = $this->handleNA($rowProperties[9]);
-                $telp_rumah = $this->handleNA($rowProperties[10]);
-                $telp_kantor = $this->handleNA($rowProperties[11]);
-                $hp_2 = $this->handleNA($rowProperties[12]);
-                $hp_utama = $this->handleNA($rowProperties[13]);
-
-                // Format data
-                $formatted_dob = $this->formatDOB($dob);
-                $formatted_hp_utama = $this->formatPhone($hp_utama);
-                $formatted_hp_kedua = $this->formatPhone($hp_2);
+            ->skip(1);
+        // ->each(function (array $rowProperties) {
 
 
-                // Save each row to the database
-                MasterData::create([
-                    'nama' => $nama,
-                    'dob' => $formatted_dob,
-                    'alamat_rumah' => $alamat_rumah,
-                    'kec_rmh' => $kec_rmh,
-                    'kota_rmh' => $kota_rmh,
-                    'perusahaan' => $perusahaan,
-                    'jabatan' => $jabatan,
-                    'alamat_perush' => $alamat_perush,
-                    'kota_perush' => $kota_perush,
-                    'kode_pos' => $kode_pos,
-                    'telp_rumah' => $telp_rumah,
-                    'telp_kantor' => $telp_kantor,
-                    'hp_2' => $formatted_hp_kedua,
-                    'hp_utama' => $formatted_hp_utama
-                ]);
-            });
+
+        //     // Save each row to the database
+        //     MasterData::create([
+        //         
+        //     ]);
+        // });
 
         // Delete the file from storage after processing
+
+
+        $this->saveDataToDatabase($rows);
+
         Storage::delete($tempPath);
 
         return response()->json(['message' => 'Success mang']);
@@ -279,38 +249,62 @@ class MasterDataController extends Controller
         return response()->download($zipPath)->deleteFileAfterSend(true);
     }
 
-    private function saveDataToDatabase($data)
+    public function saveDataToDatabase($rows)
     {
-        foreach ($data as $row) {
-            try {
+        $batch = [];
 
-                // Format data
-                $formatted_dob = $this->formatDOB($row['DOB'] ?? null);
-                $formatted_hp_utama = $this->formatPhone($row['Hp_Utama']);
-                $formatted_hp_kedua = $this->formatPhone($row['Hp_2'] ?? null);
+        // Get batch data
+        foreach ($rows as $row) {
+
+            // Get data and handle empty or null or n/a data
+            $nama = $this->handleNA($row[0]);
+            $dob = $this->handleNA($row[1]);
+            $alamat_rumah = $this->handleNA($row[2]);
+            $kec_rmh = $this->handleNA($row[3]);
+            $kota_rmh = $this->handleNA($row[4]);
+            $perusahaan = $this->handleNA($row[5]);
+            $jabatan = $this->handleNA($row[6]);
+            $alamat_perush = $this->handleNA($row[7]);
+            $kota_perush = $this->handleNA($row[8]);
+            $kode_pos = $this->handleNA($row[9]);
+            $telp_rumah = $this->handleNA($row[10]);
+            $telp_kantor = $this->handleNA($row[11]);
+            $hp_2 = $this->handleNA($row[12]);
+            $hp_utama = $this->handleNA($row[13]);
+
+            // Format data
+            $formatted_dob = $this->formatDOB($dob);
+            $formatted_hp_utama = $this->formatPhone($hp_utama);
+            $formatted_hp_kedua = $this->formatPhone($hp_2);
+
+            $batch[] = [
+                'nama' => $nama,
+                'dob' => $formatted_dob,
+                'alamat_rumah' => $alamat_rumah,
+                'kec_rmh' => $kec_rmh,
+                'kota_rmh' => $kota_rmh,
+                'perusahaan' => $perusahaan,
+                'jabatan' => $jabatan,
+                'alamat_perush' => $alamat_perush,
+                'kota_perush' => $kota_perush,
+                'kode_pos' => $kode_pos,
+                'telp_rumah' => $telp_rumah,
+                'telp_kantor' => $telp_kantor,
+                'hp_2' => $formatted_hp_kedua,
+                'hp_utama' => $formatted_hp_utama
+            ];
+        }
+        try {
+            $chunkData = array_chunk($batch, 25);
+            
+            // Bulk insert data by chunks
+            foreach ($chunkData as $chunk) {
 
 
-                // Save each row to the database
-                MasterData::create([
-                    'nama' => $row['Nama'],
-                    'dob' => $formatted_dob,
-                    'alamat_rumah' => $row['Alamat_Rumah'],
-                    'kec_rmh' => $row['Kec_Rmh'],
-                    'kota_rmh' => $row['Kota_Rmh'],
-                    'perusahaan' => $row['Perusahaan'],
-                    'jabatan' => $row['Jabatan'],
-                    'alamat_perush' => $row['Alamat_Perush'],
-                    'kota_perush' => $row['Kota_Perush'],
-                    'kode_pos' => $row['Kode_pos'],
-                    'telp_rumah' => $row['Telp_Rumah'],
-                    'telp_kantor' => $row['Telp_Kantor'],
-                    'hp_2' => $formatted_hp_kedua,
-                    'hp_utama' => $formatted_hp_utama
-                ]);
-            } catch (\Exception $e) {
-                \Log::error('Error saving row: ', $row);
-                \Log::error('Exception: ', ['message' => $e->getMessage()]);
+                DB::table('master_data')->insert($chunk);
             }
+        } catch (\Throwable $th) {
+            throw $th;
         }
     }
 
@@ -360,7 +354,7 @@ class MasterDataController extends Controller
      */
     private function handleNA(String $value)
     {
-        $invalidValues = ['N/A', 'None', 'Unknown', '', 'n/a','na'];  // Add more as needed
+        $invalidValues = ['N/A', 'None', 'Unknown', '', 'n/a', 'na'];  // Add more as needed
         return in_array($value, $invalidValues) ? null : $value;
     }
 }
