@@ -267,6 +267,10 @@ class MasterDataController extends Controller
 
     private function saveDataTemporary($rows)
     {
+
+        // Clears table
+        DB::statement('DROP TABLE IF EXISTS temp_master_data');
+
         // Create temporary table and add duplicate flag
         DB::statement('CREATE TABLE temp_master_data LIKE master_data');
         DB::statement('ALTER TABLE temp_master_data ADD COLUMN is_duplicate INT DEFAULT 0');
