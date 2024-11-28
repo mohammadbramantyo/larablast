@@ -9,8 +9,7 @@ use Spatie\SimpleExcel\SimpleExcelReader;
 use Illuminate\Support\Facades\Storage;
 
 use Carbon\Carbon;
-
-
+use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 
 class MasterDataController extends Controller
 {
@@ -151,24 +150,41 @@ class MasterDataController extends Controller
             ->noHeaderRow()
             ->getRows()
             ->skip(1);
-        // ->each(function (array $rowProperties) {
 
-
-
-        //     // Save each row to the database
-        //     MasterData::create([
-        //         
-        //     ]);
-        // });
-
-        // Delete the file from storage after processing
-
-
-        $this->saveDataToDatabase($rows);
+        $dataProperties = $this->saveDataTemporary($rows);
 
         Storage::delete($tempPath);
 
-        return response()->json(['message' => 'Success mang']);
+        return view('dataConfirmation', $dataProperties);
+    }
+
+    public function handleUserAction(Request $request)
+    {
+        $action = $request->input('action');
+
+        if ($action == 'save_valid') {
+            DB::statement('INSERT INTO master_data (nama, dob, alamat_rumah, kec_rmh, kota_rmh, perusahaan, jabatan, alamat_perush, kota_perush, kode_pos, telp_kantor, hp_2, hp_utama)
+                            SELECT nama, dob, alamat_rumah, kec_rmh, kota_rmh, perusahaan, jabatan, alamat_perush, kota_perush, kode_pos, telp_kantor, hp_2, hp_utama
+                            FROM temp_master_data
+                            WHERE is_duplicate = 0
+                            ');
+        } else if ($action == 'save_all') {
+            DB::statement('INSERT INTO master_data (nama, dob, alamat_rumah, kec_rmh, kota_rmh, perusahaan, jabatan, alamat_perush, kota_perush, kode_pos, telp_kantor, hp_2, hp_utama)
+                            SELECT nama, dob, alamat_rumah, kec_rmh, kota_rmh, perusahaan, jabatan, alamat_perush, kota_perush, kode_pos, telp_kantor, hp_2, hp_utama
+                            FROM temp_master_data
+                            ');
+        }
+
+        if($action == 'cancel'){
+            DB::statement('DROP TABLE IF EXISTS temp_master_data');
+
+            return redirect()->route('dashboard')->with('info', 'Action Cancelled no data saved');
+        }
+
+        // Delete temporary table after
+        DB::statement('DROP TABLE IF EXISTS temp_master_data');
+
+        return redirect()->route('dashboard')->with('success', 'Data has been processed');
     }
 
 
@@ -249,6 +265,95 @@ class MasterDataController extends Controller
         return response()->download($zipPath)->deleteFileAfterSend(true);
     }
 
+    private function saveDataTemporary($rows)
+    {
+        // Create temporary table and add duplicate flag
+        DB::statement('CREATE TABLE temp_master_data LIKE master_data');
+        DB::statement('ALTER TABLE temp_master_data ADD COLUMN is_duplicate INT DEFAULT 0');
+
+
+        // HashMap to check phone duplicate
+        $seen_phone = [];
+
+        $batch_data = [];
+        $duplicate_count = 0;
+
+        // Get batch data
+        foreach ($rows as $row) {
+
+            // Get data and handle empty or null or n/a data
+            $nama = $this->handleNA($row[0]);
+            $dob = $this->handleNA($row[1]);
+            $alamat_rumah = $this->handleNA($row[2]);
+            $kec_rmh = $this->handleNA($row[3]);
+            $kota_rmh = $this->handleNA($row[4]);
+            $perusahaan = $this->handleNA($row[5]);
+            $jabatan = $this->handleNA($row[6]);
+            $alamat_perush = $this->handleNA($row[7]);
+            $kota_perush = $this->handleNA($row[8]);
+            $kode_pos = $this->handleNA($row[9]);
+            $telp_rumah = $this->handleNA($row[10]);
+            $telp_kantor = $this->handleNA($row[11]);
+            $hp_2 = $this->handleNA($row[12]);
+            $hp_utama = $this->handleNA($row[13]);
+
+            // Format data
+            $formatted_dob = $this->formatDOB($dob);
+            $formatted_hp_utama = $this->formatPhone($hp_utama);
+            $formatted_hp_kedua = $this->formatPhone($hp_2);
+
+            // Check duplicates for phone number
+            $is_duplicate = 0;
+
+            if (isset($seen_phone[$formatted_hp_utama])) {
+                $seen_phone[$formatted_hp_utama]++;
+                $duplicate_count++;
+                $is_duplicate = 1;
+            } else {
+                $seen_phone[$formatted_hp_utama] = 1;
+            }
+
+
+            $batch_data[] = [
+                'nama' => $nama,
+                'dob' => $formatted_dob,
+                'alamat_rumah' => $alamat_rumah,
+                'kec_rmh' => $kec_rmh,
+                'kota_rmh' => $kota_rmh,
+                'perusahaan' => $perusahaan,
+                'jabatan' => $jabatan,
+                'alamat_perush' => $alamat_perush,
+                'kota_perush' => $kota_perush,
+                'kode_pos' => $kode_pos,
+                'telp_rumah' => $telp_rumah,
+                'telp_kantor' => $telp_kantor,
+                'hp_2' => $formatted_hp_kedua,
+                'hp_utama' => $formatted_hp_utama,
+                'is_duplicate' => $is_duplicate
+            ];
+        }
+        try {
+            //Optimized insert number for sql see 
+            // https://www.red-gate.com/simple-talk/databases/sql-server/performance-sql-server/comparing-multiple-rows-insert-vs-single-row-insert-with-three-data-load-methods/
+            $chunkData = array_chunk($batch_data, 25);
+
+            // Bulk insert data by chunks
+            foreach ($chunkData as $chunk) {
+
+
+                DB::table('temp_master_data')->insert($chunk);
+            }
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+
+        return [
+            'totalRows' => count($batch_data),
+            'duplicates' => $duplicate_count,
+            'validRows' => count($batch_data) - $duplicate_count
+        ];
+    }
+
     public function saveDataToDatabase($rows)
     {
         $batch = [];
@@ -296,7 +401,7 @@ class MasterDataController extends Controller
         }
         try {
             $chunkData = array_chunk($batch, 25);
-            
+
             // Bulk insert data by chunks
             foreach ($chunkData as $chunk) {
 

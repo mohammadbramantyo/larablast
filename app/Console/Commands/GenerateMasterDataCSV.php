@@ -12,7 +12,7 @@ class GenerateMasterDataCSV extends Command
      *
      * @var string
      */
-    protected $signature = 'generate:masterdata-csv {filename=dummy-data-10000.csv}';
+    protected $signature = 'generate:masterdata-csv {filename=dummy-data-100000.csv}';
 
     /**
      * The console command description.
@@ -55,7 +55,7 @@ class GenerateMasterDataCSV extends Command
 
         // Generate 100,000 rows using Faker
         $faker = Faker::create();
-        for ($i = 1; $i <= 10000; $i++) {
+        for ($i = 1; $i <= 100000; $i++) {
             $row = [
                 'Nama'          => $faker->name,
                 'DOB'           => $faker->date('Y-m-d'),
