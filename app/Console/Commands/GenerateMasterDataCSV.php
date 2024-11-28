@@ -12,7 +12,7 @@ class GenerateMasterDataCSV extends Command
      *
      * @var string
      */
-    protected $signature = 'generate:masterdata-csv {filename=dummy-data-100000.csv}';
+    protected $signature = 'generate:masterdata-csv {filename=dummy-data-dupliactes-10000.csv}';
 
     /**
      * The console command description.
@@ -30,6 +30,7 @@ class GenerateMasterDataCSV extends Command
 
         // Open the file for writing
         $file = fopen($filePath, 'w');
+        $unique_rows = [];
 
         // Define the headers
         $headers = [
@@ -53,9 +54,9 @@ class GenerateMasterDataCSV extends Command
         fputcsv($file, $headers, separator:";");
 
 
-        // Generate 100,000 rows using Faker
+        // Generate 10,000 rows using Faker
         $faker = Faker::create();
-        for ($i = 1; $i <= 100000; $i++) {
+        for ($i = 1; $i <= 9000; $i++) {
             $row = [
                 'Nama'          => $faker->name,
                 'DOB'           => $faker->date('Y-m-d'),
@@ -72,13 +73,23 @@ class GenerateMasterDataCSV extends Command
                 'Hp_2'          => $faker->phoneNumber,
                 'Hp_Utama'      => $faker->phoneNumber,
             ];
+            $unique_rows[] = $row;
 
             // Write the row to the file
             fputcsv($file, $row, separator:";");
 
             // Optional: Show progress for large datasets
-            if ($i % 10000 === 0) {
-                echo "Generated $i rows...\n";
+            if ($i % 1000 === 0) {
+                echo "Generated $i unique rows...\n";
+            }
+        }
+
+        for ($i = 1; $i <= 1000; $i++) {
+            $duplicateRow = $unique_rows[array_rand($unique_rows)];
+            fputcsv($file, $duplicateRow, separator: ";");
+
+            if ($i % 1000 === 0) {
+                echo "Generated $i duplicate rows...\n";
             }
         }
 
