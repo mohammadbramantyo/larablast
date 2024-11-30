@@ -3,13 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\MasterData;
+use App\Models\UploadHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Spatie\SimpleExcel\SimpleExcelReader;
 use Illuminate\Support\Facades\Storage;
 
 use Carbon\Carbon;
-use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 
 class MasterDataController extends Controller
 {
@@ -162,20 +162,38 @@ class MasterDataController extends Controller
     {
         $action = $request->input('action');
 
+        $totalRows = $request->input('totalRows');
+        $duplicates = $request->input('duplicates');
+        $validRows = $request->input('validRows');
+
         if ($action == 'save_valid') {
             DB::statement('INSERT INTO master_data (nama, dob, alamat_rumah, kec_rmh, kota_rmh, perusahaan, jabatan, alamat_perush, kota_perush, kode_pos, telp_kantor, hp_2, hp_utama)
                             SELECT nama, dob, alamat_rumah, kec_rmh, kota_rmh, perusahaan, jabatan, alamat_perush, kota_perush, kode_pos, telp_kantor, hp_2, hp_utama
                             FROM temp_master_data
                             WHERE is_duplicate = 0
                             ');
+
+            UploadHistory::create([
+                'saved_rows' => $validRows,
+                'processed_rows' => $totalRows,
+                'duplicate_rows' => $duplicates,
+                'valid_rows' => $validRows
+            ]);
         } else if ($action == 'save_all') {
             DB::statement('INSERT INTO master_data (nama, dob, alamat_rumah, kec_rmh, kota_rmh, perusahaan, jabatan, alamat_perush, kota_perush, kode_pos, telp_kantor, hp_2, hp_utama)
                             SELECT nama, dob, alamat_rumah, kec_rmh, kota_rmh, perusahaan, jabatan, alamat_perush, kota_perush, kode_pos, telp_kantor, hp_2, hp_utama
                             FROM temp_master_data
                             ');
+
+            UploadHistory::create([
+                'saved_rows' => $totalRows,
+                'processed_rows' => $totalRows,
+                'duplicate_rows' => $duplicates,
+                'valid_rows' => $validRows
+            ]);
         }
 
-        if($action == 'cancel'){
+        if ($action == 'cancel') {
             DB::statement('DROP TABLE IF EXISTS temp_master_data');
 
             return redirect()->route('dashboard')->with('info', 'Action Cancelled no data saved');
@@ -420,6 +438,12 @@ class MasterDataController extends Controller
 
     private function formatDOB($dob)
     {
+
+        // If $dob is already a DateTime or Carbon instance, format it
+        if ($dob instanceof \DateTimeImmutable || $dob instanceof \Carbon\Carbon) {
+            return $dob->format('Y-m-d');  // Return the formatted date string
+        }
+
         if (!empty($dob)) {
             try {
                 // check if dob exist
@@ -461,9 +485,15 @@ class MasterDataController extends Controller
      * Handle N/A in file
      * @param $value string
      */
-    private function handleNA(String $value)
+    private function handleNA($value)
     {
         $invalidValues = ['N/A', 'None', 'Unknown', '', 'n/a', 'na'];  // Add more as needed
+
+        // If the value is a DateTimeImmutable, return it as-is
+        if ($value instanceof \DateTimeImmutable) {
+            return $value;
+        }
+
         return in_array($value, $invalidValues) ? null : $value;
     }
 }

@@ -21,7 +21,7 @@
                     <h1>Database Management</h1>
                 </div>
             </div>
-            <div class="p-6 mt-16">
+            <div class="p-6 mt-16 ml-64">
                 @yield('content')
             </div>
         </div>

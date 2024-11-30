@@ -16,13 +16,13 @@
 
         <!-- Data Summary -->
         <ul class="space-y-4">
-            <li class="text-lg">Total Rows Processed: 
+            <li class="text-lg">Total Rows Processed:
                 <span class="font-medium text-green-600">{{ $totalRows }}</span>
             </li>
-            <li class="text-lg">Duplicate Rows: 
+            <li class="text-lg">Duplicate Rows:
                 <span class="font-medium text-red-600">{{ $duplicates }}</span>
             </li>
-            <li class="text-lg">Valid Rows: 
+            <li class="text-lg">Valid Rows:
                 <span class="font-medium text-blue-600">{{ $validRows }}</span>
             </li>
         </ul>
@@ -31,7 +31,11 @@
         <form action="{{ route('save.data.option') }}" method="POST" class="mt-6 space-y-4">
             @csrf
             <p class="text-lg font-medium text-gray-800">What would you like to do?</p>
-            
+
+            <input type="hidden" name="totalRows" value="{{ $totalRows }}">
+            <input type="hidden" name="duplicates" value="{{ $duplicates }}">
+            <input type="hidden" name="validRows" value="{{ $validRows }}">
+
             <!-- Action Buttons -->
             <div class="flex gap-4">
                 <button type="submit" name="action" value="save_valid" class="w-full sm:w-auto bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition">Save Valid Data (Recommended)</button>

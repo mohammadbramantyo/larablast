@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('master_data', function (Blueprint $table) {
             $table->id(); // Primary key
-            $table->string('nama')->default('Unknown')->change(); // Name
+            $table->string('nama'); // Name
             $table->date('dob') ->nullable(); // Date of Birth
             $table->string('alamat_rumah') -> nullable(); // Home Address
             $table->string('kec_rmh') ->nullable(); // District (Kecamatan) for Home
