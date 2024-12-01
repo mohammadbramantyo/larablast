@@ -1,3 +1,7 @@
+@php
+
+$title = 'Upload History'
+@endphp
 @extends('layouts.app')
 
 @section('title', 'History')
