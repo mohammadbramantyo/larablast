@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Spatie\SimpleExcel\SimpleExcelWriter;
 
 class MasterDataController extends Controller
 {
@@ -69,7 +70,7 @@ class MasterDataController extends Controller
         if ($selectedJabatan) {
             $query->where('jabatan', 'like', '%' . $selectedJabatan . '%');
         }
-        
+
 
         // Get Chart Data
         $topJobs = DB::select('
@@ -283,10 +284,10 @@ class MasterDataController extends Controller
         $minAge = $request->input('min_age');
         $maxAge = $request->input('max_age');
         $selectedKotarmh = $request->input('kota_rmh');
-        $selectedKecrmh = $request->input('kec_rmh');
+        $selectedJabatan = $request->input('jabatan');
         $selectedKotaperush = $request->input('kota_perush');
 
-        $query = MasterData::query();
+        $query = DB::table('master_data')->orderBy('created_at');
 
         // Apply age filter
         if ($minAge) {
@@ -300,53 +301,71 @@ class MasterDataController extends Controller
         if ($selectedKotarmh) {
             $query->where('kota_rmh', 'like', '%' . $selectedKotarmh . '%');
         }
-        if ($selectedKecrmh) {
-            $query->where('kec_rmh', 'like', '%' . $selectedKecrmh . '%');
+        if ($selectedJabatan) {
+            $query->where('jabatan', 'like', '%' . $selectedJabatan . '%');
         }
         if ($selectedKotaperush) {
             $query->where('kota_perush', 'like', '%' . $selectedKotaperush . '%');
         }
 
 
+
         $zipFileName = 'export_data_' . now()->format('YmdHis') . '.zip';
         $zip = new \ZipArchive();
         $zipPath = storage_path("app/exports/{$zipFileName}");
 
+        $max_rows_per_files = 100000;
 
 
-        // Get the file by chunk
+
+
+        // split into files and put it in zip
         if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
             $fileIndex = 1;
-            $query->chunk(1000000, function ($rows) use (&$zip, &$fileIndex) {
-                $filename = "export_data_part_{$fileIndex}.csv";
-                $filePath = storage_path("app/exports/{$filename}");
-                $file = fopen($filePath, 'w');
 
-                // Write headers
-                fputcsv($file, ['Nama', 'DOB', 'Alamat Rumah', 'Kec_Rmh', 'Kota_Rmh', 'Perusahaan', 'Jabatan', 'Alamat_Perush', 'Kota_Perush', 'Kode_pos', 'Telp_Rumah', 'Telp_Kantor', 'Hp_2', 'Hp_Utama']);
+            $query->chunk($max_rows_per_files, function ($rows) use (&$zip, &$fileIndex) {
+                $file_name = "export_data_part_{$fileIndex}.xlsx";
+                $file_path = storage_path("app/exports/export_data_part_{$file_name}.xlsx");
 
-                // Write rows
+                $writer = SimpleExcelWriter::create($file_path, 'xlsx');
+                $writer->addHeader([
+                    'Nama',
+                    'DOB',
+                    'Alamat Rumah',
+                    'Kec_Rmh',
+                    'Kota_Rmh',
+                    'Perusahaan',
+                    'Jabatan',
+                    'Alamat_Perush',
+                    'Kota_Perush',
+                    'Kode_pos',
+                    'Telp_Rumah',
+                    'Telp_Kantor',
+                    'Hp_2',
+                    'Hp_Utama'
+                ]);
+
                 foreach ($rows as $row) {
-                    fputcsv($file, [
-                        $row->nama,
-                        $row->DOB,
-                        $row->alamat_rumah,
-                        $row->kec_rmh,
-                        $row->kota_rmh,
-                        $row->perusahaan,
-                        $row->jabatan,
-                        $row->alamat_perush,
-                        $row->kota_perush,
-                        $row->kode_pos,
-                        $row->telp_rumah,
-                        $row->telp_kantor,
-                        $row->hp_2,
-                        $row->hp_utama
+                    $writer->addRow([
+                        'Nama'=> $row->nama,
+                        'DOB' => $row->dob,
+                        'Alamat Rumah'=>$row->alamat_rumah,
+                        'Kec_Rmh'=> $row->kec_rmh,
+                        'Kota_Rmh'=>$row->kota_rmh,
+                        'Perusahaan'=>$row->perusahaan,
+                        'Jabatan'=>$row->jabatan,
+                        'Alamat_Perush'=>$row->alamat_perush,
+                        'Kota_Perush'=>$row->kota_perush,
+                        'Kode_pos'=>$row->kode_pos,
+                        'Telp_Rumah'=>$row->telp_rumah,
+                        'Telp_Kantor'=>$row->telp_kantor,
+                        'Hp_2'=>$row->hp_2,
+                        'Hp_Utama'=>$row->hp_utama
                     ]);
                 }
 
-                fclose($file);
-                $zip->addFile($filePath, $filename); // Add the CSV file to the ZIP
+                $writer->close();
+                $zip->addFile($file_path, $file_name); // Add the excel file to the ZIP
                 $fileIndex++;
             });
 

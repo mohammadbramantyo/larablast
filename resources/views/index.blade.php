@@ -96,7 +96,7 @@
                 <input type="hidden" name="min_age" value="{{ request('min_age') }}">
                 <input type="hidden" name="max_age" value="{{ request('max_age') }}">
                 <input type="hidden" name="kota_rmh" value="{{ request('kota_rmh') }}">
-                <input type="hidden" name="kec_rmh" value="{{ request('kec_rmh') }}">
+                <input type="hidden" name="jabatan" value="{{ request('jabatan') }}">
                 <input type="hidden" name="kota_perush" value="{{ request('kota_perush') }}">
                 <button type="submit" class="bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition">Export Data</button>
             </form>
