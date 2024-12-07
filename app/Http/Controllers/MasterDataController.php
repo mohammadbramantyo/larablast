@@ -347,20 +347,20 @@ class MasterDataController extends Controller
 
                 foreach ($rows as $row) {
                     $writer->addRow([
-                        'Nama'=> $row->nama,
+                        'Nama' => $row->nama,
                         'DOB' => $row->dob,
-                        'Alamat Rumah'=>$row->alamat_rumah,
-                        'Kec_Rmh'=> $row->kec_rmh,
-                        'Kota_Rmh'=>$row->kota_rmh,
-                        'Perusahaan'=>$row->perusahaan,
-                        'Jabatan'=>$row->jabatan,
-                        'Alamat_Perush'=>$row->alamat_perush,
-                        'Kota_Perush'=>$row->kota_perush,
-                        'Kode_pos'=>$row->kode_pos,
-                        'Telp_Rumah'=>$row->telp_rumah,
-                        'Telp_Kantor'=>$row->telp_kantor,
-                        'Hp_2'=>$row->hp_2,
-                        'Hp_Utama'=>$row->hp_utama
+                        'Alamat Rumah' => $row->alamat_rumah,
+                        'Kec_Rmh' => $row->kec_rmh,
+                        'Kota_Rmh' => $row->kota_rmh,
+                        'Perusahaan' => $row->perusahaan,
+                        'Jabatan' => $row->jabatan,
+                        'Alamat_Perush' => $row->alamat_perush,
+                        'Kota_Perush' => $row->kota_perush,
+                        'Kode_pos' => $row->kode_pos,
+                        'Telp_Rumah' => $row->telp_rumah,
+                        'Telp_Kantor' => $row->telp_kantor,
+                        'Hp_2' => $row->hp_2,
+                        'Hp_Utama' => $row->hp_utama
                     ]);
                 }
 
@@ -386,7 +386,12 @@ class MasterDataController extends Controller
 
 
         // HashMap to check phone duplicate
-        $seen_phone = [];
+        $seen_phone = DB::table('master_data')
+            ->pluck('hp_utama')
+            ->mapWithKeys(function ($phone) {
+                return [$phone => 0];
+            })
+            ->toArray();
 
         $batch_data = [];
         $duplicate_count = 0;
