@@ -38,6 +38,20 @@
                 </div>
             </div>
             <div class="w-full sm:w-1/2 lg:w-1/4 mb-4">
+                <!-- Name -->
+                <div class="form-group">
+                    <label for="name" class="block text-sm font-medium text-gray-700">Nama</label>
+                    <input type="text" name="name" id="name" value="{{ request('name') }}" class="form-control mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+            <div class="w-full sm:w-1/2 lg:w-1/4 mb-4">
+                <!-- Nomor HP -->
+                <div class="form-group">
+                    <label for="phone" class="block text-sm font-medium text-gray-700">Nomor HP (Utama) </label>
+                    <input type="text" name="phone" id="phone" value="{{ request('phone') }}" class="form-control mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+            <div class="w-full sm:w-1/2 lg:w-1/4 mb-4">
                 <!-- Kota Rumah -->
                 <div class="form-group">
                     <label for="kota_rmh" class="block text-sm font-medium text-gray-700">Kota Rumah:</label>
@@ -91,7 +105,8 @@
     <h1 class="text-4xl p-4">Leads Table</h1>
     <div id="info-container" class="flex justify-between mt-2">
         <p class="p-2">Showing {{ $master_data->count() }} of {{ $master_data->total() }} Results.</p>
-        <div id="button-container" class=" flex gap-1 justify-end p-2">
+        <div id="button-container" class="flex gap-1 justify-end p-2">
+            @include('components.uploadForm')
             <form method="GET" action="{{ route('export') }}" class="d-inline">
                 <input type="hidden" name="min_age" value="{{ request('min_age') }}">
                 <input type="hidden" name="max_age" value="{{ request('max_age') }}">
@@ -100,8 +115,7 @@
                 <input type="hidden" name="kota_perush" value="{{ request('kota_perush') }}">
                 <button type="submit" class="bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition">Export Data</button>
             </form>
-
-            @include('components.uploadForm')
+            @include('components.delete_form')
         </div>
     </div>
 

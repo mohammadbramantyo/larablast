@@ -40,6 +40,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/upload', [MasterDataController::class, 'upload'])->name('upload');
     Route::post('/upload-spatie', [MasterDataController::class, 'upload_simple_excel'])->name('upload_simple_excel');
     Route::post('/save-data-option', [MasterDataController::class, 'handleUserAction'])->name('save.data.option');
+    Route::post('/clear-data', [MasterDataController::class, 'clear_database'])->name('clear_data');
 });
 Route::get('/test-routes', function () {
     return 'Test route is working!';

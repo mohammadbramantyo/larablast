@@ -13,6 +13,9 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Spatie\SimpleExcel\SimpleExcelWriter;
 
+use Illuminate\Support\Facades\Redirect;
+
+
 class MasterDataController extends Controller
 {
     public function index(Request $request)
@@ -22,6 +25,9 @@ class MasterDataController extends Controller
         $selectedKotarmh = $request->input('kota_rmh');
         $selectedJabatan = $request->input('jabatan');
         $selectedKotaperush = $request->input('kota_perush');
+
+        $nama = $request->input('name');
+        $hp_utama = $request->input('phone');
 
         $query = MasterData::query();
 
@@ -58,6 +64,14 @@ class MasterDataController extends Controller
         }
         if ($maxAge) {
             $query->whereRaw('TIMESTAMPDIFF(YEAR, dob, CURDATE()) <= ?', [$maxAge]);
+        }
+
+        // Apply filter nama n ho
+        if($nama){
+            $query->where('nama','like','%'.$nama.'%');
+        }
+        if($hp_utama){
+            $query->where('hp_utama','like','%'.$hp_utama.'%');
         }
 
         // Apply filter domisili
@@ -138,6 +152,12 @@ class MasterDataController extends Controller
                 'selectedKotaperush',
             )
         );
+    }
+
+    public function clear_database()
+    {
+        DB::table('master_data')->truncate();  // This will remove all data from the table
+        return Redirect::route('dashboard');  // Redirect to the dashboard route
     }
 
     public function upload(Request $request)
