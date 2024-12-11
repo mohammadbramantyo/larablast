@@ -63,11 +63,11 @@ class MasterDataController extends Controller
         }
 
         // Apply filter nama n ho
-        if($nama){
-            $query->where('nama','like','%'.$nama.'%');
+        if ($nama) {
+            $query->where('nama', 'like', '%' . $nama . '%');
         }
-        if($hp_utama){
-            $query->where('hp_utama','like','%'.$hp_utama.'%');
+        if ($hp_utama) {
+            $query->where('hp_utama', 'like', '%' . $hp_utama . '%');
         }
 
         // Apply filter domisili
@@ -156,5 +156,26 @@ class MasterDataController extends Controller
         return Redirect::route('dashboard');  // Redirect to the dashboard route
     }
 
-    
+    /**
+     * Remove the specified record from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function destroy($id)
+    {
+        try {
+            // Find the record by ID
+            $data = MasterData::findOrFail($id);
+
+            // Delete the record
+            $data->delete();
+
+            // Redirect back with a success message
+            return redirect()->route('dashboard')->with('success', 'Record deleted successfully!');
+        } catch (\Exception $e) {
+            // Redirect back with an error message if something goes wrong
+            return redirect()->route('dashboard')->with('error', 'Failed to delete the record.');
+        }
+    }
 }

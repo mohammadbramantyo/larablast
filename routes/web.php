@@ -42,6 +42,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/upload', [UploadController::class, 'upload'])->name('upload');
     Route::post('/save-data-option', [UploadController::class, 'handleUserAction'])->name('save.data.option');
     Route::post('/clear-data', [MasterDataController::class, 'clear_database'])->name('clear_data');
+
+    Route::delete('/delete/{id}',[MasterDataController::class, 'destroy'])->name('master_data.destroy');
 });
 Route::get('/test-routes', function () {
     return 'Test route is working!';

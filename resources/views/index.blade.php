@@ -138,6 +138,7 @@
                     <th class="border border-gray-300 px-2 py-1 text-left">Kode Pos</th>
                     <th class="border border-gray-300 px-2 py-1 text-left">Telp Rumah</th>
                     <th class="border border-gray-300 px-2 py-1 text-left">Telp Kantor</th>
+                    <th class="border border-gray-300 px-2 py-1 text-left">Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -158,6 +159,12 @@
                     <td class="border border-gray-300 px-2 py-1">{{ $data->kode_pos }}</td>
                     <td class="border border-gray-300 px-2 py-1">{{ $data->telp_rumah }}</td>
                     <td class="border border-gray-300 px-2 py-1">{{ $data->telp_kantor }}</td>
+                    <td class="border border-gray-300 px-2 py-1">
+                        <x-delete-button
+                            :action="route('master_data.destroy', $data->id)">
+                            Delete
+                        </x-delete-button>
+                    </td>
                 </tr>
                 @empty
                 <tr>
