@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\ExportController;
+use App\Http\Controllers\UploadController;
 
 // Route::get('/', function () {
 //     return view('welcome');
@@ -33,13 +35,12 @@ Route::post('logout', [LoginController::class, 'logout'])->name('logout')->middl
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [MasterDataController::class, 'index'])->name('dashboard');
-    Route::get('/export-data', [MasterDataController::class, 'export'])->name('export');
+    Route::get('/export', [ExportController::class, 'export'])->name('export');
     Route::get('/upload-history', [UploadHistoryController::class, 'show'])->name('upload_history');
 
 
-    Route::post('/upload', [MasterDataController::class, 'upload'])->name('upload');
-    Route::post('/upload-spatie', [MasterDataController::class, 'upload_simple_excel'])->name('upload_simple_excel');
-    Route::post('/save-data-option', [MasterDataController::class, 'handleUserAction'])->name('save.data.option');
+    Route::post('/upload', [UploadController::class, 'upload'])->name('upload');
+    Route::post('/save-data-option', [UploadController::class, 'handleUserAction'])->name('save.data.option');
     Route::post('/clear-data', [MasterDataController::class, 'clear_database'])->name('clear_data');
 });
 Route::get('/test-routes', function () {

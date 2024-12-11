@@ -6,11 +6,11 @@
     <!-- Modal Content -->
     <div id="modalContent" class="bg-white p-6 rounded-lg max-w-lg shadow-lg transform scale-95 opacity-0 transition-all duration-300">
         <h2 class="text-xl font-semibold mb-4">Upload Excel or CSV</h2>
-        <form action="{{ route('upload_simple_excel') }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('upload') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="mb-4">
-                <label for="spatie-excel" class="block text-sm font-medium text-gray-700">Choose Excel File</label>
-                <input type="file" name="spatie-excel" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <label for="excel_file" class="block text-sm font-medium text-gray-700">Choose Excel File</label>
+                <input type="file" name="excel_file" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             </div>
             <div class="flex gap-4">
                 <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition">Upload</button>
