@@ -18,10 +18,17 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-        'name',
+        'username',
         'email',
         'password',
+        'is_subscribed',
+        'is_admin',
     ];
+
+    public function uploadHistories()
+    {
+        return $this->hasMany(UploadHistory::class);
+    }
 
     /**
      * The attributes that should be hidden for serialization.
@@ -42,6 +49,8 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'subscribe_at'=>'datetime',
+            'subscribe_expire_at'=>'datetime',
             'password' => 'hashed',
         ];
     }

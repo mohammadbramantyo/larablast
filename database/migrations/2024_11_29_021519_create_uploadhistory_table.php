@@ -18,6 +18,13 @@ return new class extends Migration
             $table->bigInteger('processed_rows');
             $table->bigInteger('duplicate_rows');
             $table->bigInteger('valid_rows');
+
+            $table->unsignedBigInteger('user_id');
+
+            $table->foreign('user_id')
+                ->references('id')
+                ->on('users')
+                ->onDelete('cascade');
         });
     }
 

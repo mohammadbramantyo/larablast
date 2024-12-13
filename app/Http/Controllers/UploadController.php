@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Cache;
 
 
 use App\Models\UploadHistory;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 
 
 class UploadController extends Controller
@@ -25,13 +27,17 @@ class UploadController extends Controller
 
         $file = $request->file('excel_file');
 
+        $user_id = Auth::user()->id;
+
 
         // Get file contents
         $fileContent = file_get_contents($file);
 
         // Save the clean content back to a temporary file
-        $tempPath = storage_path('app/temp/uploaded_file.' . $file->getClientOriginalExtension());
+        $tempPath = storage_path('app/temp/' . $user_id . '_uploaded_file.' . $file->getClientOriginalExtension());
         file_put_contents($tempPath, $fileContent);
+
+        chmod($tempPath, 0775); 
 
         $rows = SimpleExcelReader::create($tempPath)
             ->useDelimiter(';')
@@ -41,7 +47,18 @@ class UploadController extends Controller
 
         $dataProperties = $this->saveDataTemporary($rows);
 
-        Storage::delete($tempPath);
+        sleep(1);
+
+        unset($rows);
+
+
+        // After processing is complete, delete the temporary file
+        if (file_exists($tempPath)) {
+            unlink($tempPath);  // Use unlink to delete the file
+        } else {
+            // Log the error if the file was not found
+            Log::error('Temporary file not found: ' . $tempPath);
+        }
 
         return view('dataConfirmation', $dataProperties);
     }
@@ -50,17 +67,20 @@ class UploadController extends Controller
 
     private function saveDataTemporary($rows)
     {
+        $user_id = Auth::user()->id;
+        $tableName = $this->get_user_table($user_id);
+        $temp_table_name = 'temp_' . $tableName;
 
         // Clears table
-        DB::statement('DROP TABLE IF EXISTS temp_master_data');
+        DB::statement('DROP TABLE IF EXISTS ' . $temp_table_name);
 
         // Create temporary table and add duplicate flag
-        DB::statement('CREATE TABLE temp_master_data LIKE master_data');
-        DB::statement('ALTER TABLE temp_master_data ADD COLUMN is_duplicate INT DEFAULT 0');
+        DB::statement('CREATE TABLE ' . $temp_table_name . ' LIKE master_data');
+        DB::statement('ALTER TABLE ' . $temp_table_name . ' ADD COLUMN is_duplicate INT DEFAULT 0');
 
 
         // HashMap to check phone duplicate
-        $seen_phone = DB::table('master_data')
+        $seen_phone = DB::table($tableName)
             ->pluck('hp_utama')
             ->mapWithKeys(function ($phone) {
                 return [$phone => 0];
@@ -133,7 +153,7 @@ class UploadController extends Controller
             foreach ($chunkData as $chunk) {
 
 
-                DB::table('temp_master_data')->insert($chunk);
+                DB::table($temp_table_name)->insert($chunk);
             }
         } catch (\Throwable $th) {
             throw $th;
@@ -148,20 +168,27 @@ class UploadController extends Controller
 
     public function handleUserAction(Request $request)
     {
+
+        $user_id = Auth::user()->id;
+        $tableName = $this->get_user_table($user_id);
+        $temp_table_name = 'temp_' . $tableName;
+
         $action = $request->input('action');
 
         $totalRows = $request->input('totalRows');
         $duplicates = $request->input('duplicates');
         $validRows = $request->input('validRows');
 
-        Cache::forget('city_home_options');
-        Cache::forget('city_work_options');
-        Cache::forget('jabatan_options');
+        Cache::forget($user_id . '_city_home_options');
+        Cache::forget($user_id . '_city_work_options');
+        Cache::forget($user_id . '_jabatan_options');
+        Cache::forget($user_id . '_top_jobs');
+        Cache::forget($user_id . '_top_city');
 
         if ($action == 'save_valid') {
-            DB::statement('INSERT INTO master_data (nama, dob, alamat_rumah, kec_rmh, kota_rmh, perusahaan, jabatan, alamat_perush, kota_perush, kode_pos, telp_kantor, hp_2, hp_utama)
+            DB::statement('INSERT INTO ' . $tableName . ' (nama, dob, alamat_rumah, kec_rmh, kota_rmh, perusahaan, jabatan, alamat_perush, kota_perush, kode_pos, telp_kantor, hp_2, hp_utama)
                             SELECT nama, dob, alamat_rumah, kec_rmh, kota_rmh, perusahaan, jabatan, alamat_perush, kota_perush, kode_pos, telp_kantor, hp_2, hp_utama
-                            FROM temp_master_data
+                            FROM ' . $temp_table_name . '
                             WHERE is_duplicate = 0
                             ');
 
@@ -172,27 +199,28 @@ class UploadController extends Controller
                 'valid_rows' => $validRows
             ]);
         } else if ($action == 'save_all') {
-            DB::statement('INSERT INTO master_data (nama, dob, alamat_rumah, kec_rmh, kota_rmh, perusahaan, jabatan, alamat_perush, kota_perush, kode_pos, telp_kantor, hp_2, hp_utama)
+            DB::statement('INSERT INTO ' . $tableName . ' (nama, dob, alamat_rumah, kec_rmh, kota_rmh, perusahaan, jabatan, alamat_perush, kota_perush, kode_pos, telp_kantor, hp_2, hp_utama)
                             SELECT nama, dob, alamat_rumah, kec_rmh, kota_rmh, perusahaan, jabatan, alamat_perush, kota_perush, kode_pos, telp_kantor, hp_2, hp_utama
-                            FROM temp_master_data
+                            FROM ' . $temp_table_name . '
                             ');
 
             UploadHistory::create([
                 'saved_rows' => $totalRows,
                 'processed_rows' => $totalRows,
                 'duplicate_rows' => $duplicates,
-                'valid_rows' => $validRows
+                'valid_rows' => $validRows,
+                'user_id' => $user_id,
             ]);
         }
 
         if ($action == 'cancel') {
-            DB::statement('DROP TABLE IF EXISTS temp_master_data');
+            DB::statement('DROP TABLE IF EXISTS ' . $temp_table_name);
 
             return redirect()->route('dashboard')->with('info', 'Action Cancelled no data saved');
         }
 
         // Delete temporary table after
-        DB::statement('DROP TABLE IF EXISTS temp_master_data');
+        DB::statement('DROP TABLE IF EXISTS ' . $temp_table_name);
 
         return redirect()->route('dashboard')->with('success', 'Data has been processed');
     }
@@ -258,5 +286,17 @@ class UploadController extends Controller
         }
 
         return in_array($value, $invalidValues) ? null : $value;
+    }
+
+
+    private function get_user_table($user_id)
+    {
+        $tablename = $user_id . '_master_data';
+
+        if (!Schema::hasTable($tablename)) {
+            $tablename = 'master_data';
+        }
+
+        return $tablename;
     }
 }

@@ -5,12 +5,13 @@
         <form method="POST" action="{{ route('login') }}" class="space-y-5">
             @csrf
             <div>
-                <label for="email" class="block text-sm font-medium text-gray-600 mb-1">Email</label>
+                <label for="email" class="block text-sm font-medium text-gray-600 mb-1">Username or Email</label>
                 <input
-                    id="email"
-                    name="email"
-                    type="email"
+                    id="username_or_email"
+                    name="username_or_email"
+                    type="text"
                     class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2"
+                    placeholder="Username or Email"
                     required>
             </div>
             <div>

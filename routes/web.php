@@ -9,6 +9,8 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\UploadController;
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\SubscriptionController;
 
 // Route::get('/', function () {
 //     return view('welcome');
@@ -45,6 +47,15 @@ Route::middleware('auth')->group(function () {
 
     Route::delete('/delete/{id}',[MasterDataController::class, 'destroy'])->name('master_data.destroy');
 });
+
+Route::middleware(['auth','admin'])->group(function(){
+    Route::get('/admin/users',[AdminController::class, 'view_users'])->name('view_users');
+
+    Route::post('/subscribe/user/{user_id}', [SubscriptionController::class, 'subscribe_user'])->name('subscribe_user');
+    Route::delete('/unsubscribe/user/{user_id}', [SubscriptionController::class, 'unusubscribe_user'])->name('unsubscribe_user');
+
+});
+
 Route::get('/test-routes', function () {
     return 'Test route is working!';
 });

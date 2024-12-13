@@ -15,6 +15,11 @@ class UploadHistory extends Model
      *  */
     protected $table = 'upload_history';
 
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
     /**
      * 
      * Attributes

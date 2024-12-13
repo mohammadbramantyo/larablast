@@ -6,6 +6,10 @@ use App\Http\Controllers\Controller;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+
+
+use App\Models\User;
 
 class LoginController extends Controller
 {
@@ -19,18 +23,26 @@ class LoginController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => ['required', 'email'],
+            'username_or_email' => ['required'],
             'password' => ['required'],
         ]);
 
-        if (Auth::attempt($credentials)) {
+        $user = User::where('email', $credentials['username_or_email'])
+            ->orWhere('username', $credentials['username_or_email'])
+            ->first();
+
+
+        // Check if user exists and password is correct
+        if ($user && Hash::check($credentials['password'], $user->password)) {
+            // Log the user in
+            Auth::login($user);
             $request->session()->regenerate();
             return redirect()->intended('dashboard');
+        } else {
+            // Authentication failed
+            return back()->withErrors(['username_or_email' => 'Invalid credentials.']);
         }
 
-        return back()->withErrors([
-            'email' => 'The provided credentials do not match our records.',
-        ]);
     }
 
 
@@ -42,5 +54,4 @@ class LoginController extends Controller
 
         return redirect('/');
     }
-
 }

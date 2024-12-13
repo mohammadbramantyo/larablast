@@ -5,12 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\MasterData;
 use App\Models\UploadHistory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 use Illuminate\Support\Facades\Cache;
 
 use Illuminate\Support\Facades\Redirect;
-
+use Illuminate\Support\Facades\Schema;
 
 class MasterDataController extends Controller
 {
@@ -25,27 +26,31 @@ class MasterDataController extends Controller
         $nama = $request->input('name');
         $hp_utama = $request->input('phone');
 
-        $query = MasterData::query();
+        // Get user specific table
+        $current_user_id = Auth::user()->id;
+        $tablename = $this->get_user_table($current_user_id);
+
+        $query = DB::table($tablename);
 
         // Fetch distinct `kota_rmh` values for the dropdown
-        $kota_rmh_options = Cache::rememberForever('city_home_options', function () {
-            return DB::table('master_data')
+        $kota_rmh_options = Cache::rememberForever($current_user_id . '_city_home_options', function () use ($tablename) {
+            return DB::table($tablename)
                 ->select('kota_rmh')
                 ->distinct()
                 ->whereNotNull('kota_rmh')
                 ->pluck('kota_rmh');
         });
 
-        $kota_perush_options = Cache::rememberForever('city_work_options', function () {
-            return DB::table('master_data')
+        $kota_perush_options = Cache::rememberForever($current_user_id . '_city_work_options', function () use ($tablename) {
+            return DB::table($tablename)
                 ->select('kota_perush')
                 ->distinct()
                 ->whereNotNull('kota_perush')
                 ->pluck('kota_perush');
         });
 
-        $jabatan_options = Cache::rememberForever('jabatan_options', function () {
-            return DB::table('master_data')
+        $jabatan_options = Cache::rememberForever($current_user_id . '_jabatan_options', function () use ($tablename) {
+            return DB::table($tablename)
                 ->select('jabatan')
                 ->distinct()
                 ->whereNotNull('jabatan')
@@ -83,30 +88,34 @@ class MasterDataController extends Controller
 
 
         // Get Chart Data
-        $topJobs = DB::select('
+        $topJobs = Cache::rememberForever($current_user_id . '_top_jobs', function () use ($tablename) {
+            return DB::select('
             SELECT COALESCE(jabatan, "Unknown") AS job, 
             COUNT(*) AS count
-            FROM master_data
+            FROM ' . $tablename . '
             GROUP BY jabatan
             ORDER BY count DESC
             LIMIT 5
         ');
+        });
 
-        $topCity = DB::select('
+        $topCity = Cache::rememberForever($current_user_id . '_top_city', function () use ($tablename) {
+            return DB::select('
             SELECT COALESCE(kota_rmh, "Unknown") AS city, 
             COUNT(*) AS count
-            FROM master_data
+            FROM ' . $tablename . '
             GROUP BY kota_rmh
             ORDER BY count DESC
             LIMIT 5
         ');
+        });
 
 
         // Others category count
-        $othersCountJob = DB::table('master_data')
+        $othersCountJob = DB::table($tablename)
             ->whereNotIn('jabatan', array_column($topJobs, 'job'))
             ->count();
-        $othersCountCity = DB::table('master_data')
+        $othersCountCity = DB::table($tablename)
             ->whereNotIn('kota_rmh', array_column($topJobs, 'city'))
             ->count();
 
@@ -152,7 +161,18 @@ class MasterDataController extends Controller
 
     public function clear_database()
     {
-        DB::table('master_data')->truncate();  // This will remove all data from the table
+
+        $user_id = Auth::user()->id;
+        $tablename = $this->get_user_table($user_id);
+
+        DB::table($tablename)->truncate();  // This will remove all data from the table
+
+        Cache::forget($user_id . '_city_home_options');
+        Cache::forget($user_id . '_city_work_options');
+        Cache::forget($user_id . '_jabatan_options');
+        Cache::forget($user_id . '_top_jobs');
+        Cache::forget($user_id . '_top_city');
+
         return Redirect::route('dashboard');  // Redirect to the dashboard route
     }
 
@@ -164,18 +184,43 @@ class MasterDataController extends Controller
      */
     public function destroy($id)
     {
+
+        $user_id = Auth::user()->id;
+        $tableName = $this->get_user_table($user_id);
+
+
         try {
             // Find the record by ID
-            $data = MasterData::findOrFail($id);
+            $data = DB::table($tableName)->where('id', $id)->first();
 
-            // Delete the record
-            $data->delete();
+            if ($data) {
+                DB::table($tableName)->where('id', $id)->delete();
+            } else {
+                abort(404, 'Record not found.');
+            }
 
+            Cache::forget($user_id . '_city_home_options');
+            Cache::forget($user_id . '_city_work_options');
+            Cache::forget($user_id . '_jabatan_options');
+            Cache::forget($user_id . '_top_jobs');
+            Cache::forget($user_id . '_top_city');
             // Redirect back with a success message
             return redirect()->route('dashboard')->with('success', 'Record deleted successfully!');
         } catch (\Exception $e) {
             // Redirect back with an error message if something goes wrong
             return redirect()->route('dashboard')->with('error', 'Failed to delete the record.');
         }
+    }
+
+
+    private function get_user_table($user_id)
+    {
+        $tablename = $user_id . '_master_data';
+
+        if (!Schema::hasTable($tablename)) {
+            $tablename = 'master_data';
+        }
+
+        return $tablename;
     }
 }
