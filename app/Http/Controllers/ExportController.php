@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Spatie\SimpleExcel\SimpleExcelWriter;
 
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Auth;
+
 class ExportController extends Controller
 {
     //
@@ -18,7 +21,11 @@ class ExportController extends Controller
         $selectedJabatan = $request->input('jabatan');
         $selectedKotaperush = $request->input('kota_perush');
 
-        $query = DB::table('master_data')->orderBy('created_at');
+        // Get user specific table
+        $current_user_id = Auth::user()->id;
+        $tablename = $this->get_user_table($current_user_id);
+
+        $query = DB::table($tablename)->orderBy('created_at');
 
         // Apply age filter
         if ($minAge) {
@@ -103,5 +110,17 @@ class ExportController extends Controller
             $zip->close();
         }
         return response()->download($zipPath)->deleteFileAfterSend(true);
+    }
+
+
+    private function get_user_table($user_id)
+    {
+        $tablename = $user_id . '_master_data';
+
+        if (!Schema::hasTable($tablename)) {
+            $tablename = 'master_data';
+        }
+
+        return $tablename;
     }
 }

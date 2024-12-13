@@ -12,10 +12,6 @@ use App\Http\Controllers\UploadController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\SubscriptionController;
 
-// Route::get('/', function () {
-//     return view('welcome');
-// });
-
 Route::get('/', function () {
     return redirect('/dashboard');
 });
@@ -39,21 +35,24 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [MasterDataController::class, 'index'])->name('dashboard');
     Route::get('/export', [ExportController::class, 'export'])->name('export');
     Route::get('/upload-history', [UploadHistoryController::class, 'show'])->name('upload_history');
+});
 
 
+// Route protection for changing the database
+// only subscribed user or admin
+Route::middleware(['auth', 'upload'])->group(function () {
     Route::post('/upload', [UploadController::class, 'upload'])->name('upload');
     Route::post('/save-data-option', [UploadController::class, 'handleUserAction'])->name('save.data.option');
     Route::post('/clear-data', [MasterDataController::class, 'clear_database'])->name('clear_data');
-
-    Route::delete('/delete/{id}',[MasterDataController::class, 'destroy'])->name('master_data.destroy');
+    Route::delete('/delete/{id}', [MasterDataController::class, 'destroy'])->name('master_data.destroy');
 });
 
-Route::middleware(['auth','admin'])->group(function(){
-    Route::get('/admin/users',[AdminController::class, 'view_users'])->name('view_users');
+
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/admin/users', [AdminController::class, 'view_users'])->name('view_users');
 
     Route::post('/subscribe/user/{user_id}', [SubscriptionController::class, 'subscribe_user'])->name('subscribe_user');
     Route::delete('/unsubscribe/user/{user_id}', [SubscriptionController::class, 'unusubscribe_user'])->name('unsubscribe_user');
-
 });
 
 Route::get('/test-routes', function () {

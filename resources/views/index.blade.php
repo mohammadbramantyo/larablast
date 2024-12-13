@@ -106,7 +106,9 @@
     <div id="info-container" class="flex justify-between mt-2">
         <p class="p-2">Showing {{ $master_data->count() }} of {{ $master_data->total() }} Results.</p>
         <div id="button-container" class="flex gap-1 justify-end p-2">
+            @if(auth()->user()->is_admin || auth()->user()->is_subscribed)
             @include('components.uploadForm')
+            @endif
             <form method="GET" action="{{ route('export') }}" class="d-inline">
                 <input type="hidden" name="min_age" value="{{ request('min_age') }}">
                 <input type="hidden" name="max_age" value="{{ request('max_age') }}">
@@ -115,7 +117,9 @@
                 <input type="hidden" name="kota_perush" value="{{ request('kota_perush') }}">
                 <button type="submit" class="bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition">Export Data</button>
             </form>
+            @if(auth()->user()->is_admin || auth()->user()->is_subscribed)
             @include('components.delete_form')
+            @endif
         </div>
     </div>
 
@@ -138,7 +142,9 @@
                     <th class="border border-gray-300 px-2 py-1 text-left">Kode Pos</th>
                     <th class="border border-gray-300 px-2 py-1 text-left">Telp Rumah</th>
                     <th class="border border-gray-300 px-2 py-1 text-left">Telp Kantor</th>
+                    @if(auth()->user()->is_admin || auth()->user()->is_subscribed)
                     <th class="border border-gray-300 px-2 py-1 text-left">Action</th>
+                    @endif
                 </tr>
             </thead>
             <tbody>
@@ -159,12 +165,14 @@
                     <td class="border border-gray-300 px-2 py-1">{{ $data->kode_pos }}</td>
                     <td class="border border-gray-300 px-2 py-1">{{ $data->telp_rumah }}</td>
                     <td class="border border-gray-300 px-2 py-1">{{ $data->telp_kantor }}</td>
+                    @if(auth()->user()->is_admin || auth()->user()->is_subscribed)
                     <td class="border border-gray-300 px-2 py-1">
                         <x-delete-button
                             :action="route('master_data.destroy', $data->id)">
                             Delete
                         </x-delete-button>
                     </td>
+                    @endif
                 </tr>
                 @empty
                 <tr>

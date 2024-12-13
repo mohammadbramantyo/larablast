@@ -196,7 +196,8 @@ class UploadController extends Controller
                 'saved_rows' => $validRows,
                 'processed_rows' => $totalRows,
                 'duplicate_rows' => $duplicates,
-                'valid_rows' => $validRows
+                'valid_rows' => $validRows,
+                'user_id'=>$user_id,
             ]);
         } else if ($action == 'save_all') {
             DB::statement('INSERT INTO ' . $tableName . ' (nama, dob, alamat_rumah, kec_rmh, kota_rmh, perusahaan, jabatan, alamat_perush, kota_perush, kode_pos, telp_kantor, hp_2, hp_utama)
