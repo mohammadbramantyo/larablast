@@ -31,5 +31,6 @@ class UploadHistory extends Model
         'processed_rows',
         'duplicate_rows',
         'valid_rows',
+        'user_id',
     ];
 }
